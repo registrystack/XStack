@@ -40,6 +40,8 @@ Alpha defaults are less capable, never less safe. Access and data sharing defaul
 
 `required-from.json` holds, for each gap, what each level requires and whether the gap is on the trust boundary. Which gaps count as trust boundary is a first proposal and will change as pilots test it.
 
+The validator does not apply these level rules. It checks the file's shape and that its rows point at each other correctly. `handoff-to-brief` applies the level rules when it reads the hand-off.
+
 ## Sources
 
 | Field | What it holds |
@@ -97,13 +99,13 @@ In the order the prototype's HTML has them. Each page has:
 | `asks` | Questions answered on this page. |
 | `shows` | Questions whose held or derived value is shown on this page, with its source. |
 | `next` | Where the page can lead. Each branch has `to`, an optional `when` in plain words, and an optional `via` for a step outside the service, such as a sign-in or a record lookup. An empty list ends the journey. |
-| `submits` | `true` on the page that sends the application. |
+| `submits` | `true` on the page that sends the application. Exactly one page has it. |
 
-Stub pages ("not built yet") are left out and listed as an open item.
+Every page must be reachable from the first page through `next`. Stub pages ("not built yet") are left out and listed as an open item.
 
 ## Back office
 
-Work the service implies but the citizen never sees: a decision, a visit, a check by hand, a message, a payment. Each row has `id`, `what`, `trigger` (what starts it), `owner`, and optional `tags` and `gaps`. Back-office ids are never used in a page's `asks` or `shows`.
+Work the service implies but the citizen never sees: a decision, a visit, a check by hand, a message, a payment. Each row has `id`, `what`, `trigger` (what starts it), `owner`, and optional `tags` and `gaps`. Back-office ids are never used in a page's `asks` or `shows`, and never the same as a question id.
 
 ## Open items
 

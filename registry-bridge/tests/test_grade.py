@@ -36,12 +36,20 @@ def test_ground_truth_against_itself_passes_everything(truth):
     result = grade.grade(copy.deepcopy(truth), truth)
     assert failed(result) == []
     assert result["summary"]["pass_rate"] == 1.0
+    assert result["summary"]["total"] == len(grade.CHECKS) == 18
 
 
 def test_invalid_file_fails_the_schema_check(truth):
     gen = copy.deepcopy(truth)
     gen["level"] = "discovery"
     assert failed_about(grade.grade(gen, truth), "valid")
+
+
+def test_schema_invalid_file_scores_0_of_18(truth):
+    gen = copy.deepcopy(truth)
+    gen["level"] = "discovery"
+    summary = grade.grade(gen, truth)["summary"]
+    assert (summary["passed"], summary["total"]) == (0, 18)
 
 
 def test_wrong_iteration_fails_the_source_check(truth):

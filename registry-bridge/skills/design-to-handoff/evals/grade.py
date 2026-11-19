@@ -54,6 +54,28 @@ import validate_handoff  # noqa: E402
 WORD = re.compile(r"[a-z0-9]+")
 STOP = {"the", "a", "an", "of", "to", "and", "or", "for", "in", "on", "at", "is", "it", "by", "with", "when", "their", "its", "that", "this", "from"}
 
+# The 18 checks, in order. grade() uses these words, except that coverage names the count.
+CHECKS = [
+    "Valid against the hand-off contract",
+    "Same level as the ground truth",
+    "Same prototype and iteration",
+    "Same missing parts declared",
+    "Coverage: all ground-truth questions have a matching row",
+    "Known, derived or ask agrees on every matched question",
+    "Attribute key agrees on every matched question",
+    "Every attribute key is in the profile's data catalogue",
+    "Every ground-truth tag is kept on its question",
+    "Form controls agree on every matched question",
+    "A fallback wherever the ground truth has one",
+    "Same pages in the same order",
+    "Every ground-truth branch is there",
+    "Each page asks and shows the same questions",
+    "Back-office rows: at least 80% of the ground truth's are found",
+    "Open items: same number, and tags agree on at least 90%",
+    "Gaps: status agrees on at least 10 of 13",
+    "Every unresolved row in the ground truth is also flagged",
+]
+
 
 def load(path):
     return validate_handoff.load(path)
@@ -127,11 +149,10 @@ def grade(gen, truth):
     errors = validate_handoff.validate(gen)
     add("Valid against the hand-off contract", not errors, "; ".join(errors[:5]) or "valid")
     if validate_handoff.schema_errors(gen):
-        # The wrong shape: nothing below can be compared.
-        passed = sum(r["passed"] for r in results)
-        return {"expectations": results,
-                "summary": {"passed": passed, "failed": len(results) - passed, "total": len(results),
-                            "pass_rate": round(passed / len(results), 3)}}
+        # The wrong shape: nothing below can be compared, so every other check fails.
+        for text in CHECKS[1:]:
+            add(text, False, "not compared: the file does not match the contract's schema")
+        return summarise(results)
 
     add("Same level as the ground truth", gen["level"] == truth["level"], f"{gen['level']} vs {truth['level']}")
 
@@ -232,6 +253,10 @@ def grade(gen, truth):
     add("Every unresolved row in the ground truth is also flagged", not hidden,
         f"not flagged: {hidden}" if hidden else f"{len(trefs)} flagged; generated flags {len(gref)}")
 
+    return summarise(results)
+
+
+def summarise(results):
     passed = sum(r["passed"] for r in results)
     return {"expectations": results,
             "summary": {"passed": passed, "failed": len(results) - passed, "total": len(results),

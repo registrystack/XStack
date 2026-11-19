@@ -1,9 +1,12 @@
 MIT License
 
+Copyright (c) 2026 Public Digital
+Copyright (c) 2026 GovTech Barbados Limited and contributors
 Copyright (c) 2026 Registry Stack contributors
 
-registry-bridge is built on XStack by Public Digital, also MIT licensed. XStack's
-own copyright notices are in the LICENSE file at the root of the repository.
+registry-bridge is built on XStack by Public Digital, also MIT licensed. The
+first two lines are XStack's copyright notices, copied from the LICENSE file at
+the root of the repository so that they travel with this folder.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

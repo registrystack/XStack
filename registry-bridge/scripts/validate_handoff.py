@@ -9,8 +9,9 @@ Usage:
   uv run registry-bridge/scripts/validate_handoff.py path/to/service-handoff.yaml
 
 Checks the JSON Schema (references/handoff.schema.json), then what a schema
-cannot: unique ids, pages that ask or show known questions, branches to known
-pages, one row for each of the 13 gaps, form items only when a form spec is a
+cannot: unique ids, no id that is both a question and a back-office row, pages
+that ask or show known questions, branches to known pages, exactly one page
+that submits, every page reachable from the first, one row for each of the 13 gaps, form items only when a form spec is a
 source, and unresolved rows that point at something real.
 
 Exit code 0 when valid, 1 when not. Errors go to stdout, one per line.
@@ -79,6 +80,7 @@ def validate(doc):
     f_ids = [f["id"] for f in doc["form_items"]]
     for kind, ids in (("question", q_ids), ("page", p_ids), ("back-office", b_ids), ("open item", o_ids), ("form item", f_ids)):
         errors += [f"duplicate {kind} id '{i}'" for i in _dupes(ids)]
+    errors += [f"id '{i}' is both a question and a back-office row" for i in sorted(set(q_ids) & set(b_ids))]
 
     questions = set(q_ids)
     pages = set(p_ids)
@@ -98,6 +100,21 @@ def validate(doc):
         for n in p["next"]:
             if n["to"] not in pages:
                 errors.append(f"page '{p['id']}': branch to unknown page '{n['to']}'")
+
+    submitting = [p["id"] for p in doc["pages"] if p.get("submits")]
+    if len(submitting) != 1:
+        errors.append(f"pages: exactly one page must submit the application, found {len(submitting)} {submitting}")
+
+    if doc["pages"]:
+        by_id = {p["id"]: p for p in doc["pages"]}
+        reached, todo = set(), [doc["pages"][0]["id"]]
+        while todo:
+            pid = todo.pop()
+            if pid in reached or pid not in by_id:
+                continue
+            reached.add(pid)
+            todo += [n["to"] for n in by_id[pid]["next"]]
+        errors += [f"page '{i}' cannot be reached from '{doc['pages'][0]['id']}'" for i in p_ids if i not in reached]
 
     for f in doc["form_items"]:
         if f.get("question") and f["question"] not in questions:
