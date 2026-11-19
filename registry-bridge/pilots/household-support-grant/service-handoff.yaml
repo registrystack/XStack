@@ -1,0 +1,607 @@
+# Service hand-off: Household Support Grant (Kestria, a fictional country)
+#
+# Written by hand from examples/build-household-support-grant/ as the ground
+# truth for the design-to-handoff eval. Contract: ../../references/handoff.md.
+# Validate: uv run registry-bridge/scripts/validate_handoff.py <this file>
+
+handoff_version: 1
+
+service:
+  id: household-support-grant
+  name: Apply for the Household Support Grant
+  owner: Social Protection Agency (SPA)
+
+level: alpha
+
+sources:
+  xstack_ref: 63232ff
+  profile: profiles/kestria
+  service_sheet: profiles/kestria/services/household-support-grant.md
+  brief: examples/build-household-support-grant/brief.md
+  prototype:
+    name: prototype-1-once-only
+    iteration: 4
+    page: examples/build-household-support-grant/prototype-1-once-only/iteration-4/index.html
+    assumptions: examples/build-household-support-grant/prototype-1-once-only/iteration-4/assumptions.md
+    why: >-
+      Iteration 4 is the latest. Its journey, page ids, validation and data calls
+      are the same as iteration 3 (only styling and the Kestrian switcher changed),
+      so it carries every fix from rounds 1 and 2, including asking who receives
+      the money before the payout route. Prototype 1 is the self-service journey:
+      sign in, confirm facts from named registers, see a likely outcome, apply.
+      That exercises the most Registry Stack building blocks. Prototype 2 depends
+      on a level 3 fingerprint sign-in the mock cannot do, and prototype 3 defaults
+      to a reassessment rather than an application.
+  shared_assumptions: examples/build-household-support-grant/assumptions.md
+  form_spec: null
+
+missing_parts:
+  - part: form-spec
+    note: >-
+      The paper form SPA/HSG-1 has not been turned into a form spec, so there is
+      no form coverage and form_items is empty.
+
+questions:
+  - id: has-kestria-id
+    label: Do you have a KestriaID?
+    map: ask
+    attribute: null
+    source: null
+    fallback: null
+    tags: ["[VERIFY WITH USERS]"]
+    required_from: alpha
+    fields: [haveid]
+    gaps: [6, 13]
+
+  - id: full-name
+    label: Name
+    map: known
+    attribute: fullName
+    source: National Population Register, through KestriaID claims
+    fallback: Ask for given and family name on the route without KestriaID
+    tags: []
+    required_from: beta
+    fields: [given-name, family-name]
+    gaps: [6]
+
+  - id: phone
+    label: Phone number we can text
+    map: known
+    attribute: phone
+    source: National Population Register, through KestriaID claims
+    fallback: Always confirm. Ask for a number only the person uses, or none.
+    tags: ["[VERIFY WITH DATA]"]
+    required_from: beta
+    fields: [phone-ok, phone-new, manual-phone]
+    gaps: [9]
+
+  - id: address
+    label: District and village where you live
+    map: known
+    attribute: address
+    source: National Population Register, through KestriaID or KesLink
+    fallback: Ask for region, district and village. A move makes the household need a survey visit.
+    tags: ["[VERIFY WITH DATA]"]
+    required_from: beta
+    fields: [place-ok, region, district, village]
+    gaps: [7]
+
+  - id: household
+    label: Who is in your household
+    map: known
+    attribute: household
+    source: National Social Registry, through KesLink
+    fallback: No record leads to a survey request and a visit
+    tags: ["[VERIFY WITH PLATFORM]", "[VERIFY WITH POLICY]"]
+    required_from: beta
+    fields: [hh-ok]
+    gaps: [1, 7]
+
+  - id: household-size
+    label: How many people live in your household
+    map: ask
+    attribute: null
+    source: null
+    fallback: null
+    tags: []
+    required_from: alpha
+    fields: [people]
+
+  - id: programmes
+    label: Support the household already gets from SPA
+    map: known
+    attribute: programmes
+    source: National Social Registry, through KesLink
+    fallback: Do not block. SPA checks in the back office.
+    tags: ["[VERIFY WITH DEPARTMENT]"]
+    required_from: beta
+    fields: []
+    gaps: [3, 7]
+
+  - id: hsg-assessment
+    label: Whether the household can probably get the grant
+    map: derived
+    attribute: hsgAssessment
+    source: National Social Registry, worked out by SPA from band, survey date and programmes
+    fallback: Treat as needs a survey visit
+    tags: ["[VERIFY WITH POLICY]", "[VERIFY WITH DEPARTMENT]"]
+    required_from: beta
+    fields: []
+    gaps: [3]
+
+  - id: changes
+    label: Changes in the household since the last survey
+    map: ask
+    attribute: null
+    source: null
+    fallback: null
+    tags: ["[VERIFY WITH USERS]"]
+    required_from: alpha
+    fields: [change]
+    gaps: [3]
+
+  - id: recipient
+    label: Who should receive the money
+    map: ask
+    attribute: null
+    source: null
+    fallback: The applicant
+    tags: ["[VERIFY WITH POLICY]", "[VERIFY WITH USERS]"]
+    required_from: alpha
+    fields: [payee, payee-select, payee-name]
+    gaps: [11]
+
+  - id: payout-account
+    label: Where we will pay you
+    map: known
+    attribute: payoutAccount
+    source: KesPay account lookup, through the Treasury disbursement service
+    fallback: Ask for the phone the wallet is on, or offer cash at a post office
+    tags: ["[VERIFY WITH PLATFORM]"]
+    required_from: beta
+    fields: [pay-ok]
+    gaps: [11]
+
+  - id: payout-route
+    label: How should we pay you
+    map: ask
+    attribute: null
+    source: null
+    fallback: null
+    tags: ["[VERIFY WITH POLICY]"]
+    required_from: alpha
+    fields: [paynone, paynone-phone]
+    gaps: [11]
+
+  - id: recipient-phone
+    label: The recipient's phone number
+    map: ask
+    attribute: null
+    source: null
+    fallback: None given
+    tags: ["[VERIFY WITH PLATFORM]", "[VERIFY WITH POLICY]"]
+    required_from: alpha
+    fields: [payother-phone]
+    gaps: [9, 11]
+
+  - id: declaration
+    label: Declaration
+    map: ask
+    attribute: null
+    source: null
+    fallback: null
+    tags: ["[VERIFY WITH POLICY]"]
+    required_from: alpha
+    fields: [decl]
+    gaps: [1]
+
+  - id: nearest-csc
+    label: Nearest Citizen Service Centre
+    map: derived
+    attribute: null
+    source: Worked out from the district
+    fallback: null
+    tags: ["[VERIFY WITH DEPARTMENT]"]
+    required_from: beta
+    fields: []
+
+form_items: []
+
+pages:
+  - id: start
+    title: Apply for the Household Support Grant
+    kind: start
+    asks: [has-kestria-id]
+    shows: []
+    next:
+      - {to: notice, when: has a KestriaID and signs in, via: KestriaID sign-in}
+      - {to: cancelled, when: stops signing in, via: KestriaID sign-in}
+      - {to: failed, when: sign-in fails, via: KestriaID sign-in}
+      - {to: no-kuin, when: no KestriaID or not sure}
+
+  - id: no-kuin
+    title: You can still apply without a KestriaID
+    kind: interruption
+    asks: []
+    shows: []
+    next:
+      - {to: manual-you, when: answers questions here}
+      - {to: notice, when: tries signing in, via: KestriaID sign-in}
+
+  - id: cancelled
+    title: You stopped signing in
+    kind: interruption
+    asks: []
+    shows: []
+    next:
+      - {to: notice, when: tries again, via: KestriaID sign-in}
+      - {to: no-kuin, when: applies without KestriaID}
+
+  - id: failed
+    title: We could not sign you in
+    kind: interruption
+    asks: []
+    shows: []
+    next:
+      - {to: manual-you, when: answers questions here}
+      - {to: notice, when: tries again, via: KestriaID sign-in}
+
+  - id: notice
+    title: How we will use your details
+    kind: notice
+    asks: []
+    shows: []
+    next:
+      - {to: confirm-you, when: every fact is found, via: record lookup}
+      - {to: missing, when: the household is found but some facts are not, via: record lookup}
+      - {to: notfound, when: no household record, via: record lookup}
+      - {to: refused, when: the person would rather answer questions}
+
+  - id: refused
+    title: We have not got your details
+    kind: interruption
+    asks: []
+    shows: []
+    next:
+      - {to: confirm-you, when: answers questions}
+      - {to: notice, when: goes back to let SPA get the details}
+
+  - id: notfound
+    title: We cannot find your household in the registry
+    kind: interruption
+    asks: []
+    shows: []
+    next:
+      - {to: confirm-you, when: asks for a household visit}
+
+  - id: missing
+    title: We could not find some of your details
+    kind: interruption
+    asks: []
+    shows: []
+    next:
+      - {to: confirm-you}
+
+  - id: confirm-you
+    title: Check your details
+    kind: confirm
+    section: About you
+    asks: [address, phone]
+    shows: [full-name, address, phone]
+    next:
+      - {to: district, when: has moved or no address on record}
+      - {to: confirm-household, when: records were found}
+      - {to: manual-people, when: answering questions instead of records}
+
+  - id: district
+    title: Where do you live?
+    kind: question
+    section: About you
+    asks: [address]
+    shows: []
+    next:
+      - {to: confirm-household, when: records were found}
+      - {to: manual-people, when: answering questions instead of records}
+
+  - id: manual-you
+    title: Your name and phone number
+    kind: question
+    section: About you
+    asks: [full-name, phone]
+    shows: []
+    next:
+      - {to: district}
+
+  - id: manual-people
+    title: How many people live in your household?
+    kind: question
+    section: Your household
+    asks: [household-size]
+    shows: []
+    next:
+      - {to: outcome}
+
+  - id: confirm-household
+    title: Is this your household?
+    kind: confirm
+    section: Your household
+    asks: [household]
+    shows: [household]
+    next:
+      - {to: already, when: assessment is already supported}
+      - {to: changes}
+
+  - id: already
+    title: Your household already gets support from SPA
+    kind: exit
+    asks: []
+    shows: [programmes]
+    next: []
+
+  - id: changes
+    title: Has anything changed in your household?
+    kind: question
+    section: Your household
+    asks: [changes]
+    shows: []
+    next:
+      - {to: outcome}
+
+  - id: outcome
+    title: Your result
+    kind: outcome
+    asks: []
+    shows: [hsg-assessment]
+    next:
+      - {to: payee, when: likely or needs a survey visit}
+      - {to: payee, when: not likely and asks for a new survey visit}
+
+  - id: payee
+    title: Who should receive the money?
+    kind: question
+    section: How you get paid
+    asks: [recipient]
+    shows: [household]
+    next:
+      - {to: payout-other, when: another adult receives the money}
+      - {to: payout, when: the applicant receives it and an account was found}
+      - {to: payout-none, when: the applicant receives it and no account was found}
+
+  - id: payout
+    title: Where we will pay you
+    kind: confirm
+    section: How you get paid
+    asks: [payout-account]
+    shows: [payout-account]
+    next:
+      - {to: declaration, when: the account is right}
+      - {to: payout-none, when: the account is not right}
+
+  - id: payout-none
+    title: How should we pay you?
+    kind: question
+    section: How you get paid
+    asks: [payout-route]
+    shows: []
+    next:
+      - {to: declaration}
+
+  - id: payout-other
+    title: How we will find their account
+    kind: question
+    section: How you get paid
+    asks: [recipient-phone]
+    shows: []
+    next:
+      - {to: declaration}
+
+  - id: declaration
+    title: Declaration
+    kind: question
+    section: Check and send
+    asks: [declaration]
+    shows: []
+    next:
+      - {to: check}
+
+  - id: check
+    title: Check your answers
+    kind: check-answers
+    section: Check and send
+    asks: []
+    shows: [full-name, phone, address, household, household-size, changes, recipient, recipient-phone, payout-account, payout-route, declaration]
+    submits: true
+    next:
+      - {to: confirmation}
+
+  - id: confirmation
+    title: We have your application
+    kind: confirmation
+    asks: []
+    shows: []
+    next: []
+
+back_office:
+  - id: decide-application
+    what: SPA checks the application and decides, within about 20 working days when the assessment is likely
+    trigger: Application sent
+    owner: SPA
+    tags: ["[VERIFY WITH DEPARTMENT]"]
+    gaps: [2, 3]
+
+  - id: survey-visit
+    what: SPA visits the household within 6 weeks, then decides within 10 working days of the visit
+    trigger: Outcome is needs a survey visit, no household record, or a reported change or move
+    owner: SPA
+    tags: ["[VERIFY WITH DEPARTMENT]"]
+    gaps: [2, 3, 4]
+
+  - id: village-committee-check
+    what: The village committee confirms the household of someone applying without KestriaID
+    trigger: Application sent on the route without KestriaID
+    owner: SPA, with the village committee
+    gaps: [6]
+
+  - id: check-programmes
+    what: SPA checks other SPA support by hand when the programmes lookup was unavailable
+    trigger: Programmes lookup unavailable
+    owner: SPA
+    tags: ["[VERIFY WITH DEPARTMENT]"]
+    gaps: [7]
+
+  - id: check-new-job
+    what: SPA checks a reported new job against the welfare band without a visit
+    trigger: Someone in the household started work lasting more than 3 months
+    owner: SPA
+    gaps: [3]
+
+  - id: confirmation-text
+    what: Text the applicant that SPA has the request, with the HSG reference and no amount or outcome
+    trigger: Application sent
+    owner: SPA
+    gaps: [9]
+
+  - id: registered-person-text
+    what: Send the registered person a neutral text that SPA has an update for the household
+    trigger: The applicant or recipient is not the registered person
+    owner: SPA
+    tags: ["[VERIFY WITH DEPARTMENT]"]
+    gaps: [9]
+
+  - id: monthly-payout
+    what: Pay the grant on the 5th of each month, finding the recipient's account at payout time
+    trigger: Application approved
+    owner: SPA, with the Treasury disbursement service
+    tags: ["[KNOWN GAP]", "[VERIFY WITH PLATFORM]"]
+    gaps: [11]
+
+  - id: change-payout-at-csc
+    what: Change the recipient or payout route after a decision, at a CSC with a level 3 sign-in, texting the old and new number
+    trigger: The household asks to change who or how SPA pays
+    owner: SPA, at a Citizen Service Centre
+    tags: ["[KNOWN GAP]"]
+    gaps: [5, 11]
+
+  - id: switch-programme
+    what: Switch a household from the Older Persons Grant to the Household Support Grant
+    trigger: The household already gets the Older Persons Grant and chooses to switch
+    owner: SPA, at a Citizen Service Centre
+    gaps: [3]
+
+open_items:
+  - {id: oi-1, tags: ["[KNOWN GAP]"], concern: language, text: "Kestrian is an invented language and never stands in for translation by real speakers"}
+  - {id: oi-2, tags: ["[KNOWN GAP]"], concern: language, text: "Some text built at runtime may be missed by the Kestrian switcher"}
+  - {id: oi-3, tags: ["[KNOWN GAP]"], concern: language, text: "The Kestrian strings put the page over the 100 KB budget"}
+  - {id: oi-4, tags: ["[VERIFY WITH USERS]"], concern: language, text: "People can find and use the language switcher, including on a shared phone"}
+  - {id: oi-5, tags: ["[VERIFY WITH USERS]"], concern: service, text: "People with a smartphone and a working KestriaID phone can sign in at level 2 and finish in about 10 minutes"}
+  - {id: oi-6, tags: ["[VERIFY WITH USERS]"], concern: service, text: "The start page works as the landing page for a neutral SPA text, and people trust it"}
+  - {id: oi-7, tags: ["[VERIFY WITH USERS]"], concern: service, text: "Asking about KestriaID first does not make people without one feel second-class"}
+  - {id: oi-8, tags: ["[VERIFY WITH USERS]"], concern: service, text: "The no-KestriaID page helps people who are not sure"}
+  - {id: oi-9, tags: ["[VERIFY WITH DEPARTMENT]"], concern: service, text: "About 10 minutes is realistic for an 11-page happy path"}
+  - {id: oi-10, tags: ["[VERIFY WITH POLICY]"], concern: service, text: "Showing probably does not create a legal expectation"}
+  - {id: oi-11, tags: ["[VERIFY WITH POLICY]"], concern: service, text: "The lookup is public task and needs a notice, not consent, and every lookup is visible to the person"}
+  - {id: oi-12, tags: ["[VERIFY WITH USERS]"], concern: service, text: "People read and understand the data-use notice"}
+  - {id: oi-13, tags: ["[VERIFY WITH PLATFORM]"], concern: platform, text: "SPA can call its own National Social Registry over the data exchange and a usage record is written for each lookup"}
+  - {id: oi-14, tags: ["[VERIFY WITH DATA]"], concern: platform, text: "About 17% of phone numbers on record no longer work, so the number is always confirmed"}
+  - {id: oi-15, tags: ["[VERIFY WITH POLICY]"], concern: service, text: "It is lawful to show household members' names, including children, to the applicant"}
+  - {id: oi-16, tags: ["[VERIFY WITH USERS]"], concern: service, text: "People can tell if the household list is right"}
+  - {id: oi-17, tags: ["[VERIFY WITH DEPARTMENT]"], concern: service, text: "Saying the household list or district is wrong makes the household need a survey visit"}
+  - {id: oi-18, tags: ["[VERIFY WITH USERS]"], concern: service, text: "People report changes honestly and understand the five options"}
+  - {id: oi-19, tags: ["[VERIFY WITH DEPARTMENT]"], concern: service, text: "An unavailable programmes lookup never blocks an application"}
+  - {id: oi-20, tags: ["[VERIFY WITH DEPARTMENT]"], concern: service, text: "A missing assessment is treated as needing a survey visit"}
+  - {id: oi-21, tags: ["[VERIFY WITH USERS]"], concern: service, text: "A probably-not outcome is read as based on the records held, not a final no"}
+  - {id: oi-22, tags: ["[VERIFY WITH POLICY]"], concern: service, text: "A not-likely household can only ask for a new survey visit, not apply without one"}
+  - {id: oi-23, tags: ["[VERIFY WITH DEPARTMENT]"], concern: service, text: "Other help for a not-likely household is the helpline, the USSD code and a CSC"}
+  - {id: oi-24, tags: ["[VERIFY WITH USERS]"], concern: service, text: "Preselecting the applicant as recipient does not push people to name themselves"}
+  - {id: oi-25, tags: ["[VERIFY WITH PLATFORM]", "[VERIFY WITH POLICY]"], concern: platform, text: "When someone else is the recipient, what the applicant sees and whether that person confirms for themselves"}
+  - {id: oi-26, tags: ["[VERIFY WITH POLICY]"], concern: service, text: "Before a decision, a level 2 applicant can choose a wallet phone or cash instead of the account found"}
+  - {id: oi-27, tags: ["[VERIFY WITH PLATFORM]"], concern: platform, text: "A wallet can be found from a phone number alone at payout time"}
+  - {id: oi-28, tags: ["[VERIFY WITH DEPARTMENT]"], concern: service, text: "The wording of the neutral text to the registered person"}
+  - {id: oi-29, tags: ["[VERIFY WITH PLATFORM]"], concern: platform, text: "Cash voucher number and code sent by text or printed at a CSC"}
+  - {id: oi-30, tags: ["[VERIFY WITH DEPARTMENT]"], concern: service, text: "The rainy-season note is shown to every household in the affected regions that needs a visit"}
+  - {id: oi-31, tags: ["[VERIFY WITH POLICY]"], concern: service, text: "The declaration is shown word for word until SPA agrees a reworded version"}
+  - {id: oi-32, tags: ["[VERIFY WITH POLICY]"], concern: service, text: "Age 18 or over is told, not checked, because date of birth is not pulled"}
+  - {id: oi-33, tags: ["[VERIFY WITH USERS]"], concern: service, text: "The person who looks after the money may not own the phone that gets the texts"}
+  - {id: oi-34, tags: ["[VERIFY WITH DATA]"], concern: prototype, text: "The page works at 320px and on 2G or 3G within the size budget, not yet measured"}
+  - {id: oi-35, tags: ["[VERIFY WITH USERS]"], concern: service, text: "No Back link on the confirmation page, so nobody sends twice"}
+  - {id: oi-36, tags: ["[VERIFY WITH DEPARTMENT]"], concern: service, text: "The nearest CSC can be worked out from the district, but the profile has no list of CSCs"}
+  - {id: oi-37, tags: ["[VERIFY WITH USERS]"], concern: service, text: "Section tags help people see where they are in a branching journey"}
+  - {id: oi-38, tags: ["[VERIFY WITH USERS]"], concern: design-system, text: "A grey information line is enough to show a status"}
+  - {id: oi-39, tags: ["[VERIFY WITH DEPARTMENT]"], concern: design-system, text: "The USSD code is allowed in copy under the phone number rule"}
+  - {id: oi-40, tags: ["[KNOWN GAP]"], concern: platform, text: "Payouts have no contract in the mock, so payout pages use fake data"}
+  - {id: oi-41, tags: ["[KNOWN GAP]"], concern: prototype, text: "The mock shows a consent screen where the service needs a notice"}
+  - {id: oi-42, tags: ["[KNOWN GAP]"], concern: prototype, text: "The mock always signs in at level 2, so level 3 at a CSC is only described"}
+  - {id: oi-43, tags: ["[KNOWN GAP]"], concern: language, text: "Vell and Sora show a notice. Kestrian is now covered by iteration 4."}
+  - {id: oi-44, tags: ["[KNOWN GAP]"], concern: prototype, text: "The payout account comes in the same mock call as other facts, though it comes from the Treasury disbursement service"}
+  - {id: oi-45, tags: ["[KNOWN GAP]"], concern: service, text: "Authorised intermediaries are not modelled, so nothing stops one naming themselves as recipient"}
+  - {id: oi-46, tags: ["[KNOWN GAP]"], concern: service, text: "Changing the recipient or route after a decision is described in text only"}
+  - {id: oi-47, tags: ["[KNOWN GAP]"], concern: prototype, text: "Privacy, accessibility and find-a-CSC pages are not built"}
+  - {id: oi-48, tags: ["[KNOWN GAP]"], concern: design-system, text: "No checkbox component"}
+  - {id: oi-49, tags: ["[KNOWN GAP]"], concern: design-system, text: "No date input"}
+  - {id: oi-50, tags: ["[KNOWN GAP]"], concern: design-system, text: "No summary list"}
+  - {id: oi-51, tags: ["[KNOWN GAP]"], concern: design-system, text: "No select"}
+  - {id: oi-52, tags: ["[KNOWN GAP]"], concern: design-system, text: "No narrow width classes"}
+  - {id: oi-53, tags: ["[KNOWN GAP]"], concern: design-system, text: "No conditional reveal and no inset text"}
+  - {id: oi-54, tags: ["[KNOWN GAP]"], concern: design-system, text: "No neutral information notice"}
+  - {id: oi-55, tags: ["[KNOWN GAP]"], concern: design-system, text: "No multi-language switcher"}
+  - {id: oi-56, tags: ["[KNOWN GAP]"], concern: design-system, text: "The language switcher is under the 48px target"}
+  - {id: oi-57, tags: ["[KNOWN GAP]"], concern: design-system, text: "No phase banner"}
+  - {id: oi-58, tags: ["[KNOWN GAP]"], concern: design-system, text: "Never preselect a radio conflicts with the service sheet's default recipient"}
+  - {id: oi-59, tags: ["[KNOWN GAP]"], concern: prototype, text: "Simulated platform screens keep the mock's own styling"}
+
+gaps:
+  - id: 1
+    status: designed
+    note: The notice gives the purpose and says the lookup is public task, not consent. Still tagged for policy.
+    refs: [pages/notice, open_items/oi-11]
+  - id: 2
+    status: default
+    note: The design names SPA and CSC officers but no staff roles or maker and checker. Starter roles.
+    refs: [back_office/decide-application]
+  - id: 3
+    status: designed
+    note: The service sheet gives the eligibility rules. The prototype only reads the assessment, so alpha runs a simplified rule.
+    refs: [questions/hsg-assessment, sources/service_sheet]
+  - id: 4
+    status: default
+    note: The four assessment outcomes and a survey request are described. No application statuses, validity or retention. Starter statuses.
+  - id: 5
+    status: designed
+    note: A household can ask for a new survey visit, and a wrong name or account is fixed at a CSC or the provider. No formal reconsideration route.
+    refs: [pages/outcome, back_office/change-payout-at-csc]
+  - id: 6
+    status: designed
+    note: The person is matched by the KestriaID sign-in. Without one, the village committee confirms the household. Synthetic identifiers at alpha.
+    refs: [questions/has-kestria-id, back_office/village-committee-check]
+  - id: 7
+    status: designed
+    note: Every known fact names its register and a fallback. How recent a fact must be is not stated, except the 3-year survey rule.
+    refs: [questions/address, questions/household, questions/programmes]
+  - id: 8
+    status: open
+    note: Authorised intermediaries are in the service sheet but not modelled in this prototype. Out of scope at alpha.
+    refs: [open_items/oi-45]
+  - id: 9
+    status: designed
+    note: Text messages with fixed rules (no amount, outcome or link, ends with the PIN warning) and an HSG reference.
+    refs: [back_office/confirmation-text, back_office/registered-person-text]
+  - id: 10
+    status: designed
+    note: The person can see every lookup under "Who has used my data". Who reads the audit is not stated.
+    refs: [pages/notice]
+  - id: 11
+    status: open
+    note: Monthly payout is designed, but the mock has no payout contract. Simulator at alpha.
+    refs: [back_office/monthly-payout, open_items/oi-40]
+  - id: 12
+    status: default
+    note: The service issues a reference number and a text. No document or credential is designed. Starter default.
+    refs: [pages/confirmation]
+  - id: 13
+    status: default
+    note: KestriaID level 2 sign-in in the design. Demo identity at alpha.
+    refs: [questions/has-kestria-id]
+
+unresolved:
+  - ref: questions/nearest-csc
+    reason: The profile has no list of Citizen Service Centres, so the nearest one has no source to derive it from.

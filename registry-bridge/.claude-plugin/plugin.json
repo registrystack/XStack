@@ -1,0 +1,19 @@
+{
+  "name": "registry-bridge",
+  "version": "0.1.0",
+  "description": "Take a public service designed with XStack and build it on Registry Stack. Turns a chosen XStack prototype into a validated service hand-off file at a level of detail (alpha, beta or live). Built on XStack by Public Digital (MIT). Later skills need Registry Stack repositories that are not yet public.",
+  "author": {
+    "name": "Registry Stack",
+    "url": "https://github.com/registrystack"
+  },
+  "homepage": "https://github.com/registrystack/XStack/tree/main/registry-bridge",
+  "repository": "https://github.com/registrystack/XStack.git",
+  "license": "MIT",
+  "keywords": [
+    "government",
+    "digital-public-infrastructure",
+    "registry-stack",
+    "xstack",
+    "service-handoff"
+  ]
+}

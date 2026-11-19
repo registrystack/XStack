@@ -1,0 +1,36 @@
+{
+  "_about": "What Registry Stack needs that an XStack design does not ask, and what each level of detail requires for it. Read by design-to-handoff (to fill the gaps section) and by later skills that ask only what a level requires. Alpha may take a starter default for anything; a default is less capable, never less safe. 'trust_boundary' gaps must be answered at beta and may not stay defaulted at live.",
+  "levels": {
+    "alpha": "Quick proof of concept. Every gap may take the starter default. Synthetic data, demo identity, local runtime.",
+    "beta": "Pilot with real users. Every trust-boundary gap is answered. Convenience gaps may stay defaulted, each one listed.",
+    "live": "Production. No trust-boundary gap stays defaulted. Each answer names an owner and a source."
+  },
+  "gaps": [
+    {"id": 1, "name": "Purpose and legal basis", "trust_boundary": true,
+     "requires": {"alpha": "Default purpose", "beta": "Purpose stated for each use of data", "live": "Legal basis cited for each use of data"}},
+    {"id": 2, "name": "Who decides, and staff roles", "trust_boundary": true,
+     "requires": {"alpha": "Starter roles", "beta": "The service's real roles", "live": "Maker and checker verified"}},
+    {"id": 3, "name": "Decision rules", "trust_boundary": true,
+     "requires": {"alpha": "Simplified rules", "beta": "Exact rules", "live": "Versioned and effective-dated rules"}},
+    {"id": 4, "name": "Record life cycle", "trust_boundary": false,
+     "requires": {"alpha": "Starter statuses", "beta": "Statuses and validity", "live": "Retention and deletion"}},
+    {"id": 5, "name": "Appeals and corrections", "trust_boundary": true,
+     "requires": {"alpha": "None, shown in the phase banner", "beta": "A route exists", "live": "Required"}},
+    {"id": 6, "name": "Identifiers and matching", "trust_boundary": true,
+     "requires": {"alpha": "Synthetic identifiers", "beta": "The real identifier scheme", "live": "Rules for no match and for duplicates"}},
+    {"id": 7, "name": "Evidence details", "trust_boundary": true,
+     "requires": {"alpha": "Lookup", "beta": "How recent a fact must be", "live": "Fallback when the source is unavailable"}},
+    {"id": 8, "name": "Acting for someone else", "trust_boundary": true,
+     "requires": {"alpha": "Out of scope", "beta": "Answered if in scope", "live": "Required where assisted digital applies"}},
+    {"id": 9, "name": "Notifications", "trust_boundary": false,
+     "requires": {"alpha": "None", "beta": "Channel", "live": "Wording reviewed"}},
+    {"id": 10, "name": "Audit and access for the person", "trust_boundary": true,
+     "requires": {"alpha": "Audit on", "beta": "Who reads the audit", "live": "The person can see who accessed their data"}},
+    {"id": 11, "name": "Money", "trust_boundary": true,
+     "requires": {"alpha": "Simulator", "beta": "Sandbox", "live": "Real payment channel"}},
+    {"id": 12, "name": "What the service issues", "trust_boundary": false,
+     "requires": {"alpha": "PDF", "beta": "As designed", "live": "A verification route"}},
+    {"id": 13, "name": "Runtime", "trust_boundary": true,
+     "requires": {"alpha": "Local runtime with demo identity", "beta": "Real identity provider in a test environment", "live": "Production hosting"}}
+  ]
+}

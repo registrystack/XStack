@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/registrystack/XStack/registry-bridge/references/handoff.schema.json",
+  "title": "Service hand-off",
+  "description": "What one chosen XStack design hands to Registry Stack: the questions, pages, back office and open items of one prototype iteration, at a level of detail. See handoff.md for each field. Cross-references (page to question, branch to page, gap ids) are checked by scripts/validate_handoff.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["handoff_version", "service", "level", "sources", "missing_parts", "questions", "form_items", "pages", "back_office", "open_items", "gaps", "unresolved"],
+  "properties": {
+    "handoff_version": {"const": 1},
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "owner"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"type": "string", "minLength": 1},
+        "owner": {"type": "string", "minLength": 1}
+      }
+    },
+    "level": {"enum": ["alpha", "beta", "live"]},
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xstack_ref", "profile", "service_sheet", "brief", "prototype", "shared_assumptions", "form_spec"],
+      "properties": {
+        "xstack_ref": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
+        "profile": {"$ref": "#/$defs/pathOrNull"},
+        "service_sheet": {"$ref": "#/$defs/pathOrNull"},
+        "brief": {"$ref": "#/$defs/pathOrNull"},
+        "prototype": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "iteration", "page", "assumptions", "why"],
+          "properties": {
+            "name": {"type": "string", "minLength": 1},
+            "iteration": {"type": "integer", "minimum": 1},
+            "page": {"$ref": "#/$defs/path"},
+            "assumptions": {"$ref": "#/$defs/path"},
+            "why": {"type": "string", "minLength": 1}
+          }
+        },
+        "shared_assumptions": {"$ref": "#/$defs/pathOrNull"},
+        "form_spec": {"$ref": "#/$defs/pathOrNull"}
+      }
+    },
+    "missing_parts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["part", "note"],
+        "properties": {
+          "part": {"enum": ["form-spec", "question-map", "service-sheet", "brief", "data-catalogue", "personas", "profile"]},
+          "note": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label", "map", "attribute", "source", "fallback", "tags", "required_from", "fields"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "label": {"type": "string", "minLength": 1},
+          "map": {"enum": ["known", "derived", "ask"]},
+          "attribute": {"type": ["string", "null"], "minLength": 1},
+          "source": {"type": ["string", "null"], "minLength": 1},
+          "fallback": {"type": ["string", "null"], "minLength": 1},
+          "tags": {"$ref": "#/$defs/tags"},
+          "required_from": {"$ref": "#/$defs/level"},
+          "fields": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "gaps": {"$ref": "#/$defs/gapIds"},
+          "form_items": {"type": "array", "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "form_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "paper_asks", "category"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "paper_asks": {"type": "string", "minLength": 1},
+          "category": {"enum": ["ask", "lookup", "lookup-opportunity", "conditional", "add-another", "government-holds", "drop-or-challenge", "back-office"]},
+          "question": {"$ref": "#/$defs/id"},
+          "tags": {"$ref": "#/$defs/tags"}
+        }
+      }
+    },
+    "pages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "kind", "asks", "shows", "next"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "title": {"type": "string", "minLength": 1},
+          "kind": {"enum": ["start", "question", "confirm", "notice", "interruption", "outcome", "check-answers", "confirmation", "exit"]},
+          "section": {"type": "string", "minLength": 1},
+          "asks": {"type": "array", "items": {"$ref": "#/$defs/id"}},
+          "shows": {"type": "array", "items": {"$ref": "#/$defs/id"}},
+          "next": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["to"],
+              "properties": {
+                "to": {"$ref": "#/$defs/id"},
+                "when": {"type": "string", "minLength": 1},
+                "via": {"type": "string", "minLength": 1}
+              }
+            }
+          },
+          "submits": {"type": "boolean"}
+        }
+      }
+    },
+    "back_office": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "what", "trigger", "owner"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "what": {"type": "string", "minLength": 1},
+          "trigger": {"type": "string", "minLength": 1},
+          "owner": {"type": "string", "minLength": 1},
+          "tags": {"$ref": "#/$defs/tags"},
+          "gaps": {"$ref": "#/$defs/gapIds"}
+        }
+      }
+    },
+    "open_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "tags", "text", "concern"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "tags": {"allOf": [{"$ref": "#/$defs/tags"}, {"minItems": 1}]},
+          "text": {"type": "string", "minLength": 1},
+          "concern": {"enum": ["service", "platform", "prototype", "design-system", "language"]},
+          "severity": {"enum": ["high", "medium", "low"]},
+          "refs": {"type": "array", "items": {"$ref": "#/$defs/ref"}}
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "note"],
+        "properties": {
+          "id": {"type": "integer", "minimum": 1, "maximum": 13},
+          "status": {"enum": ["default", "designed", "open"]},
+          "note": {"type": "string", "minLength": 1},
+          "refs": {"type": "array", "items": {"$ref": "#/$defs/ref"}}
+        }
+      }
+    },
+    "unresolved": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ref", "reason"],
+        "properties": {
+          "ref": {"$ref": "#/$defs/ref"},
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "path": {"type": "string", "minLength": 1, "pattern": "^[^/]"},
+    "pathOrNull": {"anyOf": [{"$ref": "#/$defs/path"}, {"type": "null"}]},
+    "level": {"enum": ["alpha", "beta", "live"]},
+    "tag": {"enum": ["[VERIFY WITH USERS]", "[VERIFY WITH POLICY]", "[VERIFY WITH DEPARTMENT]", "[VERIFY WITH PLATFORM]", "[VERIFY WITH DATA]", "[KNOWN GAP]"]},
+    "tags": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/tag"}},
+    "gapIds": {"type": "array", "uniqueItems": true, "items": {"type": "integer", "minimum": 1, "maximum": 13}},
+    "ref": {"type": "string", "pattern": "^(questions|pages|back_office|open_items|form_items|gaps|sources)(/[A-Za-z0-9._-]+)?$"}
+  }
+}
