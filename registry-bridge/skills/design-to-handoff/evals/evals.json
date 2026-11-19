@@ -1,0 +1,18 @@
+{
+  "skill_name": "design-to-handoff",
+  "_about": "Run each prompt with the repo root as the working directory. Paths are relative to the repo root. `ground_truth` is the hand-written hand-off that grade.py compares the generated file with.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "household-support-grant-p1-iteration-4-alpha",
+      "prompt": "We designed the Household Support Grant with XStack in examples/build-household-support-grant/, using the Kestria profile (profiles/kestria/). We've picked prototype 1 (once-only), iteration 4, and want to build it on Registry Stack as an alpha. Write the service hand-off to service-handoff.yaml.",
+      "expected_output": "A valid service-handoff.yaml at level alpha for prototype-1-once-only iteration 4. form-spec declared missing. 15 questions with data catalogue keys fullName, phone, address, household, programmes, hsgAssessment and payoutAccount; 23 pages in HTML order without the stub page, with branching through sign-in and the record lookup; back-office rows for the decision, the survey visit, texts and payouts; 59 open items; 13 gaps; the nearest Citizen Service Centre flagged as unresolved.",
+      "ground_truth": "registry-bridge/pilots/household-support-grant/service-handoff.yaml",
+      "files": [
+        "examples/build-household-support-grant/prototype-1-once-only/iteration-4/index.html",
+        "examples/build-household-support-grant/prototype-1-once-only/iteration-4/assumptions.md",
+        "examples/build-household-support-grant/assumptions.md"
+      ]
+    }
+  ]
+}
