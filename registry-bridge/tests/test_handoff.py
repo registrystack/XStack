@@ -125,6 +125,28 @@ def test_rejects_back_office_row_on_a_citizen_page(hsg):
     assert errors_for(hsg)
 
 
+def test_rejects_back_office_id_that_is_also_a_question_id(hsg):
+    hsg["back_office"][0]["id"] = hsg["questions"][0]["id"]
+    assert f"'{hsg['questions'][0]['id']}' is both a question and a back-office row" in errors_for(hsg)
+
+
+def test_rejects_journey_with_no_page_that_submits(hsg):
+    for p in hsg["pages"]:
+        p.pop("submits", None)
+    assert "exactly one page must submit" in errors_for(hsg)
+
+
+def test_rejects_journey_with_two_pages_that_submit(hsg):
+    for p in hsg["pages"][:2]:
+        p["submits"] = True
+    assert "exactly one page must submit" in errors_for(hsg)
+
+
+def test_rejects_page_that_cannot_be_reached(hsg):
+    hsg["pages"].append({"id": "orphan", "title": "Orphan", "kind": "notice", "asks": [], "shows": [], "next": []})
+    assert "page 'orphan' cannot be reached" in errors_for(hsg)
+
+
 def test_unresolved_rows_must_point_at_something_real(hsg):
     hsg["unresolved"] = [{"ref": "questions/not-there", "reason": "x"}]
     assert "unresolved" in errors_for(hsg)

@@ -1,6 +1,6 @@
 ---
 name: design-to-handoff
-description: Turn one chosen XStack prototype iteration into a validated service-handoff.yaml for building the service on Registry Stack. Reads the prototype's index.html, its assumptions.md (question map and tagged assumptions), the shared assumptions.md, any form-spec.md, and the country profile's dpi.md and service sheet. Writes questions (known, derived or ask), ordered pages with branching, back-office rows, open items, the 13 Registry Stack gaps at a level (alpha, beta or live), and flags every row it could not resolve. Use when a team has finished designing with XStack and wants to implement on Registry Stack, or asks for a "hand-off", "service hand-off", "design to Registry Stack" or "/registry-bridge:design-to-handoff". Not for building, iterating or hardening the HTML prototype (that is xstack:brief-to-prototypes, xstack:iterate or xstack:build-for-production), and not for turning a paper form into a spec (that is xstack:form-to-spec).
+description: Turn one chosen XStack prototype iteration into a validated service-handoff.yaml for building the service on Registry Stack. Reads the prototype's index.html, its assumptions.md (question map and tagged assumptions), the shared assumptions.md, any form-spec.md, and the country profile's dpi.md and service sheet. Writes questions (known, derived or ask), ordered pages with branching, back-office rows, open items, the 13 Registry Stack gaps at a level (alpha, beta or live), and flags every row it could not resolve. Use when a team has finished designing with XStack and wants to implement on Registry Stack, or asks for a "hand-off", "service hand-off", "design to Registry Stack" or "/registry-bridge:design-to-handoff". Not for building, iterating or hardening the HTML prototype (that is xstack:brief-to-prototypes, xstack:prototype-iteration or xstack:build-for-production), and not for turning a paper form into a spec (that is xstack:form-to-spec).
 ---
 
 # Design → hand-off
@@ -42,7 +42,7 @@ For each input above that does not exist, add a `missing_parts` row with a one-l
 
 ## Step 2 – Questions
 
-Read **both question maps**: the one at the top of the iteration's `assumptions.md` and the one in the shared `assumptions.md`. The iteration's map wins where they disagree, because it is newer. Keep a shared-map row the iteration's map leaves out unless the iteration says it was dropped, and keep the tags from both. If neither has a map, add `question-map` to `missing_parts` and build the questions from the pages (step 4).
+Read **both question maps**: the one at the top of the iteration's `assumptions.md` and the one in the shared `assumptions.md`. The iteration's map wins where they disagree, because it is newer. Keep a shared-map row the iteration's map leaves out unless the iteration says it was dropped, and keep the tags from both, except a shared-map tag that applies only to other prototypes. For example, a `[KNOWN GAP]` raised because another prototype's mock lacks a claim does not belong on this prototype's row. If neither has a map, add `question-map` to `missing_parts` and build the questions from the pages (step 4).
 
 One row per fact in the question maps. Then add a row for each thing a page asks that the maps left out, for example:
 
@@ -76,7 +76,7 @@ Read the page sections of the prototype's `index.html` in document order (XStack
 - **`asks`:** questions whose `fields` are on this page.
 - **`shows`:** questions whose held or derived value the page shows (summary rows, "From government records", outcome text).
 - **`next`:** read the page's submit handler and buttons. Each `goTo`, `show` or link to another page is a branch. Write `when` in plain words from the condition. When the step goes through sign-in or a record lookup first, put that in `via` and point `to` at the page the person lands on.
-- **`submits`:** `true` on the page whose button sends the application.
+- **`submits`:** `true` on the page whose button sends the application. Exactly one page has it, and every page must be reachable from the first page through `next`.
 
 ## Step 5 – Back office
 
